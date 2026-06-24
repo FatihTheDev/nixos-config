@@ -45,11 +45,6 @@ echo "[0/13] Installing system configuration..."
 # Ensure /etc/nixos exists
 mkdir -p /etc/nixos
 
-# Back up any existing config
-if [[ -f /etc/nixos/configuration.nix ]] && ! grep -q "Telva Linux" /etc/nixos/configuration.nix 2>/dev/null; then
-    cp /etc/nixos/configuration.nix /etc/nixos/configuration.nix.bak
-    echo "  Backed up existing config to /etc/nixos/configuration.nix.bak"
-fi
 
 # Download the configuration.nix from the same repo
 if command -v curl >/dev/null 2>&1; then
