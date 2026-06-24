@@ -65,8 +65,12 @@
       "zswap.enabled=0"          # Disable zswap (we use zram)
     ];
 
-    # ── Btrfs ───────────────────────────────────────────────
-    supportedFilesystems = [ "btrfs" ];
+    # ── Filesystem support ──────────────────────────────────
+    # ext4: simple, fast, no overhead (recommended when not using btrfs snapshots)
+    # Alternative: supportedFilesystems = [ "f2fs" ];  # Faster on NVMe/SSDs
+    # Alternative: supportedFilesystems = [ "xfs" ];   # Great for large files, parallel I/O
+    # Alternative: supportedFilesystems = [ "btrfs" ]; # COW, snapshots, compression
+    supportedFilesystems = [ "ext4" "vfat" ];
   };
 
   # ═══════════════════════════════════════════════════════════
@@ -172,7 +176,7 @@
     };
 
     # ── Main user ───────────────────────────────────────────
-    telva = {
+    fatihthedev = {
       isNormalUser = true;
       description = "Telva Linux User";
       # ⚠ CHANGE THIS: generate with `mkpasswd -m yescrypt`
@@ -222,37 +226,41 @@
       driSupport = true;
       driSupport32Bit = true;
 
-      # Default: Intel
+      # Default: Intel integrated graphics
       extraPackages = with pkgs; [
-        intel-media-driver
-        vaapiIntel
-        mesa.drivers
+        intel-media-driver     # VA-API (iHD) for Broadwell+
+        intel-vaapi-driver     # VA-API (i965) for older Intel GPUs
+        mesa                   # OpenGL / Vulkan / VA-API drivers
       ];
-      # Alternative (AMD):
+      # Alternative (AMD — comment out Intel above, enable this):
       # extraPackages = with pkgs; [
-      #   libva-mesa-driver
-      #   mesa.drivers
-      #   vaapiVdpau
-      #   rocm-opencl-icd
-      # ];
-      # Alternative (Nvidia open kernel modules - Turing+):
-      # extraPackages = with pkgs; [
-      #   vaapiVdpau
-      #   libvdpau-va-gl
+      #   mesa                   # OpenGL / Vulkan / VA-API (radeonsi)
+      #   libva-vdpau-driver     # VA-API ↔ VDPAU translation
+      #   # rocmPackages.clr     # AMD OpenCL (optional, ~1GB LLVM)
       # ];
 
       setLdLibraryPath = true;
     };
 
-    # ── Nvidia (alternative: comment out Intel above, uncomment below) ───
-    # nvidia = {
-    #   open = true;              # Open kernel modules (Turing+)
+    # ── Nvidia GPU ───────────────────────────────────────────
+    # Three options — pick ONE, and comment out the Intel/AMD extraPackages above.
+    # Option A — Proprietary, open kernel modules (Turing+ GPUs, RTX 20xx+)
+    # hardware.nvidia = {
+    #   open = true;
     #   package = config.boot.kernelPackages.nvidiaPackages.stable;
     #   modesetting.enable = true;
     #   nvidiaSettings = true;
-    #   # Nouveau alternative:
-    #   # open = false;
-    #   # package = config.boot.kernelPackages.nvidiaPackages.nouveau;
+    # };
+    # Option B — Proprietary, closed kernel modules (older GPUs)
+    # hardware.nvidia = {
+    #   open = false;
+    #   package = config.boot.kernelPackages.nvidiaPackages.stable;
+    #   modesetting.enable = true;
+    # };
+    # Option C — Nouveau (open source, all GPUs, but lower performance)
+    # hardware.nvidia = {
+    #   open = false;
+    #   package = config.boot.kernelPackages.nvidiaPackages.nouveau;
     # };
 
     # ── CPU microcode ───────────────────────────────────────
@@ -262,7 +270,7 @@
     # ── Bluetooth ───────────────────────────────────────────
     bluetooth = {
       enable = true;
-      powerOnBoot = true;
+      powerOnBoot = false;
     };
 
     # ── PulseAudio (managed by PipeWire) ────────────────────
@@ -337,20 +345,6 @@
         swtpm.enable = true;
         ovmf.enable = true;
         ovmf.packages = [ pkgs.OVMFFull.fd ];
-      };
-    };
-
-    # ── Snapper (btrfs snapshots - Timeshift alternative) ──
-    snapper = {
-      enable = true;
-      snapshots."/" = {
-        TIMELINE_CREATE = true;
-        TIMELINE_CLEANUP = true;
-        TIMELINE_LIMIT_HOURLY = 5;
-        TIMELINE_LIMIT_DAILY = 7;
-        TIMELINE_LIMIT_WEEKLY = 0;
-        TIMELINE_LIMIT_MONTHLY = 0;
-        TIMELINE_LIMIT_YEARLY = 0;
       };
     };
 
