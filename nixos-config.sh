@@ -47,10 +47,11 @@ mkdir -p /etc/nixos
 
 
 # Download the configuration.nix from the same repo
-if command -v curl >/dev/null 2>&1; then
+if command -v wget >/dev/null 2>&1; then
+    wget -qO /etc/nixos/configuration.nix "$REPO_URL/configuration.nix
+elif command -v curl >/dev/null 2>&1; then
     curl -fL "$REPO_URL/configuration.nix" -o /etc/nixos/configuration.nix
-elif command -v wget >/dev/null 2>&1; then
-    wget -qO /etc/nixos/configuration.nix "$REPO_URL/configuration.nix"
+    "
 else
     echo "ERROR: Neither curl nor wget found. Install one and re-run."
     exit 1
